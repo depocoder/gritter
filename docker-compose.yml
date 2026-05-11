@@ -1,0 +1,98 @@
+services:
+  api: &main_app
+    build:
+      context: .
+      target: dev
+      dockerfile: ./Dockerfile
+    image: gritter:${GRITTER_VERSION:-latest}
+    restart: always
+    ports:
+      # Exposes application port.
+    - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rmq:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      GRITTER_HOST: 0.0.0.0
+      GRITTER_RELOAD: "True"
+      GRITTER_DB_HOST: gritter-db
+      GRITTER_DB_PORT: 5432
+      GRITTER_DB_USER: gritter
+      GRITTER_DB_PASS: gritter
+      GRITTER_DB_BASE: gritter
+      GRITTER_RABBIT_HOST: gritter-rmq
+      GRITTER_REDIS_HOST: gritter-redis
+    volumes:
+      - .:/app/src/
+
+  db:
+    image: postgres:18.3-trixie
+    hostname: gritter-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "gritter"
+      POSTGRES_USER: "gritter"
+      POSTGRES_DB: "gritter"
+    volumes:
+      - gritter-db-data:/var/lib/postgresql
+    restart: always
+    healthcheck:
+      test: pg_isready -U gritter
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  migrator:
+    <<: *main_app
+    restart: "no"
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: redis:8.4.0
+    hostname: "gritter-redis"
+    restart: always
+    ports:
+      - 6379:6379
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+  rmq:
+    image: rabbitmq:4.2.1-management-alpine
+    hostname: "gritter-rmq"
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_VHOST: "/"
+    healthcheck:
+      test: rabbitmq-diagnostics check_running -q
+      interval: 3s
+      timeout: 3s
+      retries: 50
+
+
+
+volumes:
+  gritter-db-data:
+    name: gritter-db-data
