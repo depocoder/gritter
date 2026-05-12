@@ -1,94 +1,25 @@
-import uuid
-from collections.abc import AsyncGenerator
+from datetime import datetime
 
-from fastapi import Depends
-from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin, schemas
-from fastapi_users.authentication import (
-    AuthenticationBackend,
-    BearerTransport,
-    CookieTransport,
-    JWTStrategy,
-)
-from fastapi_users.db import SQLAlchemyBaseUserTableUUID, SQLAlchemyUserDatabase
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import DateTime, String, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 from gritter.db.base import Base
-from gritter.db.dependencies import get_db_session
-from gritter.settings import settings
 
 
-class User(SQLAlchemyBaseUserTableUUID, Base):
-    """Represents a user entity."""
+class User(Base):
+    """User entity (Epic 1)."""
 
+    __tablename__ = "users"
 
-class UserRead(schemas.BaseUser[uuid.UUID]):
-    """Represents a read command for a user."""
-
-
-class UserCreate(schemas.BaseUserCreate):
-    """Represents a create command for a user."""
-
-
-class UserUpdate(schemas.BaseUserUpdate):
-    """Represents an update command for a user."""
-
-
-class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
-    """Manages a user session and its tokens."""
-
-    reset_password_token_secret = settings.users_secret
-    verification_token_secret = settings.users_secret
-
-
-async def get_user_db(
-    session: AsyncSession = Depends(get_db_session),
-) -> AsyncGenerator[SQLAlchemyUserDatabase[User, uuid.UUID], None]:
-    """
-    Yield a SQLAlchemyUserDatabase instance.
-
-    :param session: asynchronous SQLAlchemy session.
-    :yields: instance of SQLAlchemyUserDatabase.
-    """
-    yield SQLAlchemyUserDatabase(session, User)
-
-
-async def get_user_manager(
-    user_db: SQLAlchemyUserDatabase[User, uuid.UUID] = Depends(get_user_db),
-) -> AsyncGenerator[UserManager, None]:
-    """
-    Yield a UserManager instance.
-
-    :param user_db: SQLAlchemy user db instance
-    :yields: an instance of UserManager.
-    """
-    yield UserManager(user_db)
-
-
-def get_jwt_strategy() -> JWTStrategy[User, uuid.UUID]:
-    """
-    Return a JWTStrategy in order to instantiate it dynamically.
-
-    :returns: instance of JWTStrategy with provided settings.
-    """
-    return JWTStrategy(secret=settings.users_secret, lifetime_seconds=None)
-
-
-bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
-auth_jwt = AuthenticationBackend(
-    name="jwt",
-    transport=bearer_transport,
-    get_strategy=get_jwt_strategy,
-)
-cookie_transport = CookieTransport()
-auth_cookie = AuthenticationBackend(
-    name="cookie", transport=cookie_transport, get_strategy=get_jwt_strategy
-)
-
-backends = [
-    auth_cookie,
-    auth_jwt,
-]
-
-api_users = FastAPIUsers[User, uuid.UUID](get_user_manager, backends)
-
-current_active_user = api_users.current_user(active=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    first_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    login: Mapped[str] = mapped_column(
+        String(32), nullable=False, unique=True, index=True
+    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
