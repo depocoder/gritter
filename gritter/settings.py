@@ -40,6 +40,14 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = LogLevel.INFO
     users_secret: str = os.getenv("USERS_SECRET", "")
+
+    # Auth (Epic 1)
+    jwt_secret: str = os.getenv(
+        "JWT_SECRET", "dev-secret-change-me-please-32-bytes-or-more"
+    )
+    jwt_algorithm: str = "HS256"
+    access_token_ttl_seconds: int = 15 * 60
+    refresh_token_ttl_seconds: int = 7 * 24 * 60 * 60
     # Variables for the database
     db_host: str = "localhost"
     db_port: int = 5432
