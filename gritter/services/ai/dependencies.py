@@ -10,6 +10,5 @@ def get_gigachat() -> GigaChat:
     :return: gigachat.
     """
     return GigaChat(
-        credentials=settings.gigachat_authorization_key,
-        verify_ssl_certs=False
+        credentials=settings.gigachat_authorization_key, verify_ssl_certs=False
     )

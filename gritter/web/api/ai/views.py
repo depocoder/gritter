@@ -7,9 +7,7 @@ router = APIRouter()
 
 
 @router.post("/chat")
-async def send_post(
-    data: InstanceAI
-) -> None:
+async def send_post(data: InstanceAI) -> None:
     """
     Sends post to GigaChat.
 
@@ -21,7 +19,7 @@ async def send_post(
 
 @router.get("/models")
 async def get_gigachat_model(
-    get_gigachat: get_gigachat = Depends(get_gigachat)
+    get_gigachat: get_gigachat = Depends(get_gigachat),
 ) -> None:
     """
     Returns GigaChat models.
