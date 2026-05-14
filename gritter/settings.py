@@ -73,6 +73,19 @@ class Settings(BaseSettings):
     rabbit_pool_size: int = 2
     rabbit_channel_pool_size: int = 10
 
+    # Variables for MinIO
+    minio_host: str = "localhost"
+    minio_port: int = 9000
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"  # noqa: S105
+    minio_bucket_avatars: str = "avatars"
+    minio_secure: bool = False
+
+    @property
+    def minio_endpoint(self) -> str:
+        """Assemble MinIO endpoint (host:port) for the SDK."""
+        return f"{self.minio_host}:{self.minio_port}"
+
     @property
     def db_url(self) -> URL:
         """
