@@ -33,3 +33,17 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
     return user
+
+
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    user_dao: UserDAO = Depends(),
+) -> User | None:
+    """Like `get_current_user`, but returns None for missing/invalid auth."""
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        return None
+    try:
+        user_id = decode_access_token(credentials.credentials)
+    except InvalidTokenError:
+        return None
+    return await user_dao.get_by_id(user_id)
