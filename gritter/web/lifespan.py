@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from gritter.services.minio.lifespan import init_minio
 from gritter.services.rabbit.lifespan import init_rabbit, shutdown_rabbit
 from gritter.services.redis.lifespan import init_redis, shutdown_redis
 from gritter.settings import settings
@@ -46,6 +47,7 @@ async def lifespan_setup(
     _setup_db(app)
     init_redis(app)
     init_rabbit(app)
+    init_minio(app)
     app.middleware_stack = app.build_middleware_stack()
 
     yield

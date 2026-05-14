@@ -49,3 +49,8 @@ class UserDAO:
         """Persist a new password hash on `user`."""
         user.password_hash = new_password_hash
         await self.session.flush()
+
+    async def update_avatar(self, user: User, avatar_url: str) -> None:
+        """Persist a new avatar URL on `user`."""
+        user.avatar_url = avatar_url
+        await self.session.flush()

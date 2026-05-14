@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import (
 
 from gritter.db.dependencies import get_db_session
 from gritter.db.utils import create_database, drop_database
+from gritter.services.minio.dependency import get_minio_client
 from gritter.services.rabbit.dependencies import get_rmq_channel_pool
 from gritter.services.rabbit.lifespan import init_rabbit, shutdown_rabbit
 from gritter.services.redis.dependency import get_redis_pool
@@ -186,10 +187,59 @@ async def test_redis_pool() -> AsyncGenerator[ConnectionPool, None]:
 
 
 @pytest.fixture
+def test_minio_client() -> Mock:
+    """In-memory mock of `minio.Minio` for tests.
+
+    Stores objects in a dict keyed by object name; `get_object` returns a
+    response-like mock whose `.read()` and `.headers` mirror what the SDK
+    surfaces from a real bucket.
+    """
+    store: dict[str, tuple[bytes, str]] = {}
+
+    def _put(
+        bucket_name: str,
+        object_name: str,
+        data: Any,
+        length: int,
+        content_type: str = "application/octet-stream",
+    ) -> None:
+        del bucket_name, length
+        payload = data.read() if hasattr(data, "read") else bytes(data)
+        store[object_name] = (payload, content_type)
+
+    def _get(bucket_name: str, object_name: str) -> Mock:
+        del bucket_name
+        from minio.error import S3Error
+
+        if object_name not in store:
+            raise S3Error(
+                code="NoSuchKey",
+                message="not found",
+                resource=object_name,
+                request_id="test",
+                host_id="test",
+                response=Mock(),
+            )
+        payload, content_type = store[object_name]
+        response = Mock()
+        response.read.return_value = payload
+        response.headers = {"Content-Type": content_type}
+        return response
+
+    client = Mock()
+    client._store = store
+    client.bucket_exists.return_value = True
+    client.put_object.side_effect = _put
+    client.get_object.side_effect = _get
+    return client
+
+
+@pytest.fixture
 def fastapi_app(
     dbsession: AsyncSession,
     test_redis_pool: ConnectionPool,
     test_rmq_pool: Pool[Channel],
+    test_minio_client: Mock,
 ) -> FastAPI:
     """
     Fixture for creating FastAPI app.
@@ -200,6 +250,7 @@ def fastapi_app(
     application.dependency_overrides[get_db_session] = lambda: dbsession
     application.dependency_overrides[get_redis_pool] = lambda: test_redis_pool
     application.dependency_overrides[get_rmq_channel_pool] = lambda: test_rmq_pool
+    application.dependency_overrides[get_minio_client] = lambda: test_minio_client
     return application
 
 
