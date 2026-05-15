@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from gigachat import GigaChat
+from gigachat import Embeddings, GigaChat, Models
 
 from gritter.services.ai.dependencies import get_gigachat
 from gritter.web.api.ai.schema import InstanceAI
@@ -10,7 +10,7 @@ router = APIRouter()
 @router.post("/chat")
 async def send_post(
     data: InstanceAI, gigachat: GigaChat = Depends(get_gigachat)
-) -> dict:
+) -> Embeddings:
     """
     Sends post to GigaChat.
 
@@ -23,7 +23,7 @@ async def send_post(
 @router.get("/models")
 async def get_gigachat_model(
     gigachat: GigaChat = Depends(get_gigachat),
-) -> dict:
+) -> Models:
     """
     Returns GigaChat models.
 
