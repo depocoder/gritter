@@ -8,8 +8,7 @@ router = APIRouter()
 
 @router.post("/chat")
 async def send_post(
-    data: InstanceAI,
-    gigachat: get_gigachat = Depends(get_gigachat)
+    data: InstanceAI, gigachat: get_gigachat = Depends(get_gigachat)
 ) -> None:
     """
     Sends post to GigaChat.
