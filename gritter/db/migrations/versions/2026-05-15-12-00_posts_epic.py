@@ -21,9 +21,13 @@ def upgrade() -> None:
     sentiment = sa.Enum("positive", "neutral", "negative", name="sentiment")
     age_rating = sa.Enum("0+", "12+", "16+", "18+", name="age_rating")
     outbox_status = sa.Enum("pending", "sent", name="outbox_status")
+    # sentiment/age_rating idут через op.add_column ниже — для них add_column
+    # НЕ запускает CREATE TYPE автоматически, поэтому нужен явный create().
+    # outbox_status используется в op.create_table("posts_outbox") — CREATE TYPE
+    # сгенерируется автоматически вместе с таблицей; явный create не нужен,
+    # иначе будет дубль (DuplicateObjectError на чистой БД).
     sentiment.create(op.get_bind(), checkfirst=True)
     age_rating.create(op.get_bind(), checkfirst=True)
-    outbox_status.create(op.get_bind(), checkfirst=True)
 
     op.add_column("posts", sa.Column("sentiment", sentiment, nullable=True))
     op.add_column("posts", sa.Column("age_rating", age_rating, nullable=True))
