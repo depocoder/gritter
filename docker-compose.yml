@@ -60,6 +60,7 @@ services:
     <<: *main_app
     restart: "no"
     command: alembic upgrade head
+    volumes: []
     depends_on:
       db:
         condition: service_healthy
