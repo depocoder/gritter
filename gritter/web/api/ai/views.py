@@ -1,23 +1,30 @@
 from fastapi import APIRouter, Depends
-from gigachat import Embeddings, GigaChat, Models
+from gigachat import ChatCompletion, GigaChat, Models
+from redis.asyncio import ConnectionPool
 
 from gritter.services.ai.dependencies import get_gigachat
+from gritter.services.ai.service import get_cached_gigachat
+from gritter.services.redis.dependency import get_redis_pool
 from gritter.web.api.ai.schema import InstanceAI
 
 router = APIRouter()
 
 
 @router.post("/chat")
-async def send_post(
-    data: InstanceAI, gigachat: GigaChat = Depends(get_gigachat)
-) -> Embeddings:
+async def chat(
+    data: InstanceAI,
+    gigachat: GigaChat = Depends(get_gigachat),
+    redis_pool: ConnectionPool = Depends(get_redis_pool),
+) -> ChatCompletion:
     """
     Sends post to GigaChat.
 
-    :param data: .
-    :returns: .
+    :param data: Instance AI.
+    :param gigachat: GigaChat AI.
+    :param redis_pool: redis connection pool.
+    :returns: ChatCompletion.
     """
-    return gigachat.embeddings([data])
+    return await get_cached_gigachat(data, gigachat, redis_pool)
 
 
 @router.get("/models")

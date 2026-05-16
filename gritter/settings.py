@@ -88,6 +88,7 @@ class Settings(BaseSettings):
 
     # Variables for GigaChat
     gigachat_authorization_key: str | None = None
+    gigachat_standard_model: str = "GigaChat-2"
 
     @property
     def db_url(self) -> URL:
