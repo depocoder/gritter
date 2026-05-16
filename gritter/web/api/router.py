@@ -1,6 +1,7 @@
 from fastapi.routing import APIRouter
 
 from gritter.web.api import (
+    ai,
     auth,
     comments,
     docs,
@@ -26,3 +27,4 @@ api_router.include_router(echo.router, prefix="/echo", tags=["echo"])
 api_router.include_router(dummy.router, prefix="/dummy", tags=["dummy"])
 api_router.include_router(redis.router, prefix="/redis", tags=["redis"])
 api_router.include_router(rabbit.router, prefix="/rabbit", tags=["rabbit"])
+api_router.include_router(ai.router, prefix="/ai", tags=["ai"])

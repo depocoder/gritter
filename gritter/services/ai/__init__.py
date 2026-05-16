@@ -1,0 +1,1 @@
+"""AI GigaChat service."""
