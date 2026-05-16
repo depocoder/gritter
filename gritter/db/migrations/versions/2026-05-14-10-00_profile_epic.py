@@ -39,11 +39,6 @@ def upgrade() -> None:
         "idx_follows_followee", "follows", ["followee_id"], unique=False
     )
 
-    post_status = sa.Enum(
-        "on_moderation", "published", name="post_status"
-    )
-    post_status.create(op.get_bind(), checkfirst=True)
-
     op.create_table(
         "posts",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -53,7 +48,7 @@ def upgrade() -> None:
         sa.Column("category", sa.String(length=64), nullable=True),
         sa.Column(
             "status",
-            post_status,
+            sa.Enum("on_moderation", "published", name="post_status"),
             server_default="on_moderation",
             nullable=False,
         ),

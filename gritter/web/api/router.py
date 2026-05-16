@@ -2,9 +2,11 @@ from fastapi.routing import APIRouter
 
 from gritter.web.api import (
     auth,
+    comments,
     docs,
     dummy,
     echo,
+    likes,
     monitoring,
     posts,
     profile,
@@ -17,6 +19,8 @@ api_router.include_router(monitoring.router)
 api_router.include_router(auth.router)
 api_router.include_router(profile.router, tags=["profile"])
 api_router.include_router(posts.router, tags=["posts"])
+api_router.include_router(likes.router, tags=["likes"])
+api_router.include_router(comments.router, tags=["comments"])
 api_router.include_router(docs.router)
 api_router.include_router(echo.router, prefix="/echo", tags=["echo"])
 api_router.include_router(dummy.router, prefix="/dummy", tags=["dummy"])
