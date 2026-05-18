@@ -48,7 +48,7 @@ class PostsOutboxDAO:
     async def mark_sent(self, raw: PostOutbox) -> None:
         """Post uccessfully sent."""
         raw.status = OutboxStatus.sent
-        raw.sent_at = datetime.now(tz=UTC)
+        raw.sent_at = datetime.now(tz=UTC).replace(tzinfo=None)
 
     async def mark_failed(self, raw: PostOutbox, error: str) -> None:
         """Unsuccessful sent -> catch error."""
