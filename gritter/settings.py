@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     gigachat_standard_model: str = "GigaChat-2"
 
     # Variables for GigaChat
-    posts_outbox_queue: str = "posts_outbox"
+    posts_exchange: str = "posts"
     roll_idle_sleep_seconds: float = 1.0
     batch_size: int = 100
 

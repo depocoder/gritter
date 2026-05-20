@@ -20,28 +20,28 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from gritter.db.dao.posts_outbox_dao import PostsOutboxDAO
 from gritter.settings import settings
 
-POSTS_OUTBOX_QUEUE = settings.posts_outbox_queue
+POSTS_EXCHANGE = settings.posts_exchange
 POLL_IDLE_SLEEP_SECONDS = settings.roll_idle_sleep_seconds
 batch_size = settings.batch_size
 
 
 async def _publish_one(
-    channel: aio_pika.abc.AbstractChannel,
-    queue_name: str,
+    exchange: aio_pika.abc.AbstractExchange,
+    routing_key: str,
     body: bytes,
 ) -> None:
-    """Publish a single message to the default exchange using `queue_name`."""
+    """Publish to the `posts` topic exchange with a per-event routing key."""
     message = aio_pika.Message(
         body=body,
         content_type="application/json",
         delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
     )
-    await channel.default_exchange.publish(message, routing_key=queue_name)
+    await exchange.publish(message, routing_key=routing_key)
 
 
 async def _process_batch(
     session: AsyncSession,
-    channel: aio_pika.abc.AbstractChannel,
+    exchange: aio_pika.abc.AbstractExchange,
 ) -> int:
     """Drain one batch of pending rows. Returns how many were handled.
 
@@ -59,7 +59,7 @@ async def _process_batch(
     for post in posts:
         try:
             body = json.dumps(post.payload).encode("utf-8")
-            await _publish_one(channel, POSTS_OUTBOX_QUEUE, body)
+            await _publish_one(exchange, post.event_type, body)
             await dao.mark_sent(post)
         except Exception as exc:
             logger.warning("Failed to publish outbox row {}: {}", post.id, exc)
@@ -75,13 +75,16 @@ async def _run_forever(
 ) -> None:
     """Main poll loop: open a channel + session per iteration, sleep when idle."""
     async with connection.channel() as channel:
-        # Idempotent queue declare — publisher and consumer can both call it.
-        await channel.declare_queue(POSTS_OUTBOX_QUEUE, durable=True)
+        exchange = await channel.declare_exchange(
+            POSTS_EXCHANGE,
+            aio_pika.ExchangeType.TOPIC,
+            durable=True,
+        )
 
         while True:
             async with session_factory() as session:
                 try:
-                    processed = await _process_batch(session, channel)
+                    processed = await _process_batch(session, exchange)
                 except Exception:
                     logger.exception("Outbox batch crashed; rolling back")
                     await session.rollback()
