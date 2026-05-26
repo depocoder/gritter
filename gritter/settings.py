@@ -81,14 +81,19 @@ class Settings(BaseSettings):
     minio_bucket_avatars: str = "avatars"
     minio_secure: bool = False
 
+    # Variables for GigaChat
+    gigachat_authorization_key: str | None = None
+    gigachat_standard_model: str = "GigaChat-2"
+
+    # Variables for GigaChat
+    posts_exchange: str = "posts"
+    roll_idle_sleep_seconds: float = 1.0
+    batch_size: int = 100
+
     @property
     def minio_endpoint(self) -> str:
         """Assemble MinIO endpoint (host:port) for the SDK."""
         return f"{self.minio_host}:{self.minio_port}"
-
-    # Variables for GigaChat
-    gigachat_authorization_key: str | None = None
-    gigachat_standard_model: str = "GigaChat-2"
 
     @property
     def db_url(self) -> URL:
