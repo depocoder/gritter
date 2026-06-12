@@ -28,6 +28,7 @@ dependencies = [
   "minio >=7.2.0,<8",
   "python-multipart >=0.0.9,<1",
   "gigachat>=0.2.1",
+  "tenacity>=9.1.4",
 ]
 
 [dependency-groups]

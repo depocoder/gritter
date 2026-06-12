@@ -1,7 +1,7 @@
 """DAO for the `posts` table."""
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TypeVar
 
 from fastapi import Depends
@@ -9,7 +9,7 @@ from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gritter.db.dependencies import get_db_session
-from gritter.db.models.posts import Post, PostStatus
+from gritter.db.models.posts import AgeRating, Post, PostStatus, Sentiment
 
 _S = TypeVar("_S", bound=Select)  # type: ignore[type-arg]
 
@@ -77,6 +77,26 @@ class PostDAO:
             post.moderated_at = None
         await self.session.flush()
         await self.session.refresh(post)
+
+    async def set_moderation_result(
+        self,
+        post: Post,
+        *,
+        sentiment: Sentiment,
+        age_rating: AgeRating,
+    ) -> None:
+        """DS lkfgldkfgdlfkg ."""
+        post.sentiment = sentiment
+        post.age_rating = age_rating
+        post.status = PostStatus.published
+        post.moderated_at = datetime.now(tz=UTC).replace(tzinfo=None)
+        post.moderation_attempts += 1
+        await self.session.flush()
+
+    async def bump_moderation_attempt(self, post: Post) -> None:
+        """RFd fdf."""
+        post.moderation_attempts += 1
+        await self.session.flush()
 
     @staticmethod
     def _public_filter() -> tuple[ColumnElement[bool], ...]:
