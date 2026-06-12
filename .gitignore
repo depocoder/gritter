@@ -145,3 +145,7 @@ cython_debug/
 extracontext/
 claudecontext/
 .DS_Store
+
+# The Python "lib/" rule above must not swallow frontend FSD lib folders
+!frontend/**/lib/
+!frontend/**/lib/**
