@@ -38,6 +38,51 @@ services:
     volumes:
       - .:/app/src/
 
+  moderation-worker:
+    image: gritter:${GRITTER_VERSION:-latest}
+    restart: always
+    command: python -m gritter.services.worker
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GRITTER_DB_HOST: gritter-db
+      GRITTER_RABBIT_HOST: gritter-rmq
+    depends_on:
+      db:
+        condition: service_healthy
+      rmq:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+
+  posts-publisher:
+    image: gritter:${GRITTER_VERSION:-latest}
+    restart: always
+    command: python -m gritter.services.posts_publisher
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GRITTER_DB_HOST: gritter-db
+      GRITTER_RABBIT_HOST: gritter-rmq
+    depends_on:
+      moderation-worker:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+    image: gritter-frontend:${GRITTER_VERSION:-latest}
+    restart: always
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    environment:
+      # Where nginx proxies /api (e.g. https://gritter.azamaton.ru)
+      BACKEND_URL: ${FRONTEND_BACKEND_URL:-http://api:8000}
+    depends_on:
+      - api
+
   db:
     image: postgres:18.3-trixie
     hostname: gritter-db
@@ -61,6 +106,9 @@ services:
     restart: "no"
     command: alembic upgrade head
     volumes: []
+    # do not inherit 8000:8000 from api — port conflict when the
+    # migrator restarts while api is running
+    ports: []
     depends_on:
       db:
         condition: service_healthy

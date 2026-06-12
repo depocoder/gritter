@@ -30,6 +30,10 @@ docker compose up --build
 
 This command exposes the web application on port 8000, mounts current directory and enables autoreload.
 
+It also starts the React frontend on port 8080 (see [frontend/README.md](frontend/README.md))
+and the post-moderation pipeline (`posts-publisher` + `moderation-worker`,
+requires `GRITTER_GIGACHAT_AUTHORIZATION_KEY` in `.env`).
+
 But you have to rebuild image every time you modify `uv.lock` or `pyproject.toml` with this command:
 
 ```bash
